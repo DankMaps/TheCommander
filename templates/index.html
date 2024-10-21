@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Command Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .category-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .category-buttons button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+            flex: 1 1 30%;
+            max-width: 180px;
+        }
+
+        .category-buttons button:hover {
+            background-color: #0056b3;
+        }
+
+        .category-buttons button:focus {
+            outline: none;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            width: 70%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        button[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        td a {
+            color: #007bff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        td a:hover {
+            text-decoration: underline;
+        }
+
+        p {
+            font-size: 16px;
+            color: #666;
+        }
+
+        /* Notification style */
+        .notification {
+            display: none;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: #28a745;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+        }
+
+        .notification.show {
+            display: block;
+        }
+    </style>
+    <script>
+        async function searchCommands(query) {
+            const response = await fetch("/search", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `query=${query}`
+            });
+            const data = await response.json();
+            let resultDiv = document.getElementById("results");
+            resultDiv.innerHTML = '';
+            
+            if (data.length > 0) {
+                let tableHTML = '<div class="table-container"><table><thead><tr><th>Command</th><th>Description</th></tr></thead><tbody>';
+
+                data.forEach(cmd => {
+                    tableHTML += `
+                        <tr>
+                            <td><a href="#" onclick="copyToClipboard('${cmd.command}')">${cmd.command}</a></td>
+                            <td>${cmd.description}</td>
+                        </tr>`;
+                });
+
+                tableHTML += '</tbody></table></div>';
+                resultDiv.innerHTML = tableHTML;
+            } else {
+                resultDiv.innerHTML = '<p>No matching commands found.</p>';
+            }
+        }
+
+        function copyToClipboard(command) {
+            const tempInput = document.createElement('input');
+            tempInput.style.position = 'absolute';
+            tempInput.style.left = '-1000px';
+            tempInput.value = command;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showNotification(`Copied: ${command}`);
+        }
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.innerText = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000); // Hide notification after 3 seconds
+        }
+
+        function searchByCategory(category) {
+            searchCommands(category);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Linux Command Search</h1>
+
+        <!-- Pre-populated category buttons -->
+        <div class="category-buttons">
+            <button onclick="searchByCategory('memory')">Memory</button>
+            <button onclick="searchByCategory('cpu')">CPU</button>
+            <button onclick="searchByCategory('file')">File Operations</button>
+            <button onclick="searchByCategory('network')">Network</button>
+            <button onclick="searchByCategory('permissions')">File Permissions</button>
+            <button onclick="searchByCategory('users')">Users & Groups</button>
+            <button onclick="searchByCategory('process')">Processes</button>
+            <button onclick="searchByCategory('system')">System Info</button>
+            <button onclick="searchByCategory('firewall')">Firewall</button>
+        </div>
+
+        <!-- Search input for custom queries -->
+        <div class="search-container">
+            <input type="text" id="query" placeholder="Enter keyword" />
+            <button type="submit" onclick="searchCommands(document.getElementById('query').value)">Search</button>
+        </div>
+
+        <!-- Search results -->
+        <div id="results"></div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+</body>
+</html>
